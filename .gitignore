@@ -1,0 +1,17 @@
+node_modules/
+
+# Local runtime output
+server.out.log
+server.err.log
+
+# Environment and editor-local files
+.env
+.env.*
+!.env.example
+.vscode/
+
+# Common build/cache output
+dist/
+build/
+coverage/
+.cache/

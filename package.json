@@ -1,0 +1,13 @@
+{
+  "name": "mpu-attitude-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start-server.ps1",
+    "check": "node --check app.js && node --check ina219.js && node --check log-viewer.js && node --check telemetry-utils.js && node telemetry-utils.test.js"
+  },
+  "dependencies": {
+    "three": "^0.176.0"
+  }
+}

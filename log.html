@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MPU Log Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell log-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">CSV LOG</p>
+          <h1>MPU Log Viewer</h1>
+          <p id="logStatus" class="status-text">Loading existing log...</p>
+        </div>
+        <div class="actions">
+          <a class="button-link secondary" href="./index.html">MPU View</a>
+          <a class="button-link secondary" href="./ina219.html">INA219 View</a>
+          <button id="loadDefaultButton" type="button" class="secondary">Load LOG000.CSV</button>
+          <label class="file-button">
+            <span>Upload CSV</span>
+            <input id="csvFileInput" type="file" accept=".csv,text/csv" />
+          </label>
+        </div>
+      </header>
+
+      <section class="log-dashboard" aria-label="CSV log viewer">
+        <section class="power-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Summary</h2>
+              <p>Source: <span id="sourceLabel">--</span></p>
+            </div>
+            <span class="mode-badge" id="rowCount">0</span>
+          </div>
+
+          <div class="summary-grid log-summary-grid">
+            <div class="summary-item primary">
+              <span>Duration</span>
+              <strong id="durationValue">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Mode</span>
+              <strong id="modeSummary">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Fault</span>
+              <strong id="faultSummary" data-state="unknown">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Bus Voltage</span>
+              <strong id="busSummary">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Current</span>
+              <strong id="currentSummary">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Roll</span>
+              <strong id="rollSummary">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Pitch</span>
+              <strong id="pitchSummary">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Audio Rail</span>
+              <strong id="audioSummary">--</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="power-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Charts</h2>
+              <p>Filtered rows are reflected in both charts.</p>
+            </div>
+          </div>
+          <div class="log-chart-grid">
+            <div class="scope-panel">
+              <div class="scope-title">
+                <span><b class="scope-current"></b>Attitude</span>
+                <strong id="attitudeLabel">Roll / Pitch</strong>
+              </div>
+              <canvas id="attitudeCanvas" width="1000" height="240"></canvas>
+            </div>
+            <div class="scope-panel">
+              <div class="scope-title">
+                <span><b class="scope-bus"></b>Power</span>
+                <strong id="powerLabel">Bus Voltage / Current</strong>
+              </div>
+              <canvas id="powerCanvas" width="1000" height="240"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="power-panel">
+          <div class="log-toolbar">
+            <label>
+              <span>Search</span>
+              <input id="searchInput" type="search" placeholder="head, fault, mode..." />
+            </label>
+            <label>
+              <span>Mode</span>
+              <select id="modeFilter">
+                <option value="all">All modes</option>
+              </select>
+            </label>
+            <label>
+              <span>Fault</span>
+              <select id="faultFilter">
+                <option value="all">All faults</option>
+              </select>
+            </label>
+            <div class="table-meta" id="tableMeta">0 matching rows</div>
+          </div>
+
+          <div class="log-table-wrap">
+            <table class="log-table">
+              <thead id="logTableHead"></thead>
+              <tbody id="logTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="./log-viewer.js"></script>
+  </body>
+</html>

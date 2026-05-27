@@ -1,0 +1,497 @@
+可以，我們就把它定成一個可實作、可展示、可寫履歷的專案：
+
+# 專案名稱
+
+**STM32 智慧型 Head-Tracking Audio Device Prototype**
+
+核心目標：
+
+```text
+STM32F411CEU6 讀取 MPU6500 姿態資料
+→ 做基本姿態估測
+→ 根據頭部方向改變音訊輸出
+→ 用 AO3401 做 Audio / Sensor 電源域控制
+→ 用 UART 輸出 debug log
+→ 後續加入 INA219 做功耗量測
+```
+
+依據：STM32F411 系列具備 Cortex-M4/FPU、DMA、I2C、USART、SPI/I2S、USB OTG FS 等周邊能力；MPU6500 模組支援 IIC/SPI，內建 16-bit ADC，提供 gyro 與 accelerometer；MAX98357A 支援 I2S 音訊輸入、2.5V~5.5V 單電源，且不需要 MCLK。  
+
+---
+
+# 一、第一版系統架構
+
+先不要一次把藍牙做進來。第一版先做：
+
+```text
+穩定 DC IN
+  |
+  +-- 5V_AUDIO  -> AO3401 -> MAX98357A -> Speaker
+  |
+  +-- 3V3_SYS   -> STM32F411CEU6
+  |
+  +-- 3V3_SENSOR-> AO3401 -> MPU6500
+```
+
+資料流：
+
+```text
+MPU6500
+  |
+  | SPI / I2C
+  v
+STM32F411CEU6
+  |
+  | I2S
+  v
+MAX98357A
+  |
+  v
+Speaker
+```
+
+控制流：
+
+```text
+STM32 GPIO
+  |
+  +-- AUDIO_PWR_EN  -> 控制 AO3401 -> MAX98357A 電源
+  |
+  +-- SENSOR_PWR_EN -> 控制 AO3401 -> MPU6500 電源
+```
+
+Debug 流：
+
+```text
+STM32 UART
+  |
+  v
+CH340G / USB-UART
+  |
+  v
+PC Serial Terminal
+```
+
+---
+
+# 二、建議第一版功能切分
+
+## Milestone 1：Board bring-up
+
+目標：
+
+```text
+1. STM32F411CEU6 可燒錄
+2. UART printf 正常
+3. LED / GPIO 測試正常
+4. AUDIO_PWR_EN / SENSOR_PWR_EN 可控制
+```
+
+驗收標準：
+
+```text
+UART 顯示：
+[BOOT] system start
+[PWR] sensor on
+[PWR] audio on
+```
+
+---
+
+## Milestone 2：MPU6500 讀取
+
+先用 **SPI**，原因是它比較像正式產品設計，速度也比 I2C 高。GY-6500 支援 IIC/SPI，這點 datasheet 有寫。
+
+驗收標準：
+
+```text
+WHO_AM_I read success
+ax ay az gx gy gz 持續輸出
+```
+
+UART log 範例：
+
+```text
+[IMU] ax=0.01 ay=-0.03 az=0.98 gx=0.2 gy=-0.1 gz=0.0
+```
+
+---
+
+## Milestone 3：I2S 音訊輸出
+
+MAX98357A 不需要 I2C 設定，也不需要 MCLK，只要給 power、LRCLK、BCLK、DIN 就可以輸出音訊。這非常適合你第一版做 bring-up。
+
+先做：
+
+```text
+STM32 產生 440Hz sine wave
+透過 I2S DMA 送到 MAX98357A
+喇叭聽到聲音
+```
+
+驗收標準：
+
+```text
+1. AUDIO_PWR_EN = ON
+2. I2S DMA start
+3. Speaker 有連續音訊
+```
+
+---
+
+## Milestone 4：Head tracking audio demo
+
+先不要做很複雜的空間音訊，第一版做「姿態控制音量 / 音色」。
+
+例如：
+
+```text
+頭往左  -> 音量降低或聲音偏暗
+頭往右  -> 音量提高或聲音偏亮
+頭低頭  -> mute
+頭抬頭  -> unmute
+```
+
+這是推論設計，不是 datasheet 直接規定。理由是：你目前只有單顆 MAX98357A，若只有單聲道輸出，不能做真正左右聲道 spatial audio；但可以做姿態控制音訊行為。
+
+---
+
+## Milestone 5：Low power mode demo
+
+做成三種模式：
+
+| 模式     | SENSOR | AUDIO | MCU      | 用途        |
+| ------ | ------ | ----- | -------- | --------- |
+| ACTIVE | ON     | ON    | Run      | 播放 + 姿態偵測 |
+| IDLE   | ON     | OFF   | Sleep/低頻 | 等待動作      |
+| SLEEP  | OFF    | OFF   | Stop     | 低功耗展示     |
+
+驗收標準：
+
+```text
+[MODE] ACTIVE current = xxx mA
+[MODE] IDLE current = xxx mA
+[MODE] SLEEP current = xxx mA
+```
+
+INA219 後面再加。第一版可以先用萬用表量電流。
+
+---
+
+# 三、ASCII 版本基本電路圖
+
+## 1. 全系統電源架構
+
+```text
+                 +----------------------+
+                 | Stable DC Input      |
+                 | 5V / 3.3V available  |
+                 +----------+-----------+
+                            |
+              +-------------+-------------+
+              |                           |
+             +5V                         +3V3
+              |                           |
+              |                           +----------------------+
+              |                           | STM32F411CEU6        |
+              |                           | VDD / VDDA = 3.3V    |
+              |                           | GND common           |
+              |                           +----------+-----------+
+              |                                      |
+              |                                      |
+              v                                      v
+     +------------------+                  +------------------+
+     | AO3401 P-MOS     |                  | AO3401 P-MOS     |
+     | AUDIO_PWR switch |                  | SENSOR_PWR switch|
+     +--------+---------+                  +--------+---------+
+              |                                     |
+              v                                     v
+     +------------------+                  +------------------+
+     | MAX98357A        |                  | GY-6500 / MPU6500|
+     | I2S Class-D AMP  |                  | IMU module       |
+     +--------+---------+                  +------------------+
+              |
+              v
+          Speaker
+```
+
+---
+
+## 2. AO3401 高邊電源開關基本接法
+
+這是你可以在麵包板上先做的版本。
+
+### 控制 5V Audio 電源
+
+```text
+                 +5V_AUDIO_IN
+                      |
+                      |
+                    Source
+                 +----|<----+
+                 | AO3401   |
+                 +----+-----+
+                      |
+                    Drain
+                      |
+                      +--------------------> +5V_AUDIO_SW
+                                             to MAX98357A VIN
+
+Gate control:
+
++5V_AUDIO_IN ----[100k]----+
+                           |
+                           +---- Gate of AO3401
+                           |
+STM32_AUDIO_EN --[1k]-- B  |
+                     NPN  C+
+                          E
+                          |
+                         GND
+```
+
+邏輯：
+
+| STM32_AUDIO_EN | NPN | AO3401 Gate      | Audio 電源 |
+| -------------- | --- | ---------------- | -------- |
+| LOW            | OFF | 被 100k 拉到 Source | OFF      |
+| HIGH           | ON  | Gate 被拉到 GND     | ON       |
+
+這樣接的理由：
+如果切的是 5V，STM32 GPIO 不應直接接到 AO3401 Gate，因為 STM32 是 3.3V 邏輯。用 NPN 當低邊拉 Gate 比較安全。
+
+---
+
+## 3. MPU6500 電源控制
+
+如果你要切 3.3V sensor power，可以這樣：
+
+```text
+                 +3V3_SENSOR_IN
+                      |
+                    Source
+                 +----|<----+
+                 | AO3401   |
+                 +----+-----+
+                      |
+                    Drain
+                      |
+                      +--------------------> +3V3_SENSOR_SW
+                                             to GY-6500 VCC
+
+Gate:
+
++3V3_SENSOR_IN --[100k]---- Gate
+STM32_SENSOR_EN --[1k]-- NPN base
+NPN collector ---------- Gate
+NPN emitter ------------ GND
+```
+
+如果 SENSOR_PWR 是 3.3V，其實 STM32 GPIO 直接控制 Gate 也可以做到開關，但我建議仍用 NPN，因為 AUDIO 和 SENSOR 控制架構一致，後面寫報告比較清楚。
+
+---
+
+## 4. STM32 與 MPU6500 SPI 接線
+
+建議使用 SPI1：
+
+```text
+STM32F411CEU6              GY-6500 / MPU6500
+------------------------------------------------
+3V3_SENSOR_SW    --------> VCC
+GND              --------> GND
+
+PA5  / SPI1_SCK  --------> SCL / SCLK
+PA6  / SPI1_MISO <-------- SDA / SDO / MISO
+PA7  / SPI1_MOSI --------> SDI / MOSI
+PB0  / GPIO_CS   --------> CS / NCS
+
+PB1  / EXTI      <-------- INT   optional
+```
+
+注意：
+GY-6500 模組引腳命名不一定一致。你實際模組上如果是 `SCL/SDA/AD0/CS` 那種命名，要再依模組絲印確認 SPI 腳位。
+
+---
+
+## 5. STM32 與 MAX98357A I2S 接線
+
+建議使用 I2S2 或 I2S3，這裡先給常見 I2S2 方向：
+
+```text
+STM32F411CEU6                  MAX98357A
+------------------------------------------------
++5V_AUDIO_SW        ---------> VIN
+GND                 ---------> GND
+
+PB10 / I2S2_CK      ---------> BCLK
+PB12 / I2S2_WS      ---------> LRC / LRCLK
+PB15 / I2S2_SD      ---------> DIN
+
+GPIO_AUDIO_SD       ---------> SD_MODE optional
+```
+
+MAX98357A 不需要 MCLK，這是它很適合第一版的原因。
+
+---
+
+## 6. UART Debug 接線
+
+```text
+STM32F411CEU6              CH340G / USB-UART
+------------------------------------------------
+PA9  / USART1_TX   ------> RXD
+PA10 / USART1_RX   <------ TXD
+GND                ------> GND
+```
+
+如果你使用的是 STM32F411CEU6 Black Pill 類板子，也可以用 USB CDC，但第一版我建議用 UART，debug 最直接。
+
+---
+
+# 四、建議 pinout 第一版
+
+這是建議，不是唯一答案。
+
+| 功能            | STM32 Pin  | 周邊                 |
+| ------------- | ---------- | ------------------ |
+| SPI1_SCK      | PA5        | MPU6500 SCK        |
+| SPI1_MISO     | PA6        | MPU6500 MISO       |
+| SPI1_MOSI     | PA7        | MPU6500 MOSI       |
+| IMU_CS        | PB0        | MPU6500 CS         |
+| IMU_INT       | PB1        | MPU6500 INT        |
+| I2S2_CK       | PB10       | MAX98357 BCLK      |
+| I2S2_WS       | PB12       | MAX98357 LRCLK     |
+| I2S2_SD       | PB15       | MAX98357 DIN       |
+| UART_TX       | PA9        | CH340 RX           |
+| UART_RX       | PA10       | CH340 TX           |
+| AUDIO_PWR_EN  | PC13 或 PB8 | AO3401 gate driver |
+| SENSOR_PWR_EN | PB9        | AO3401 gate driver |
+
+PC13 在某些板子上可能接 LED 或有限制。若你的板子 PC13 已接 LED，AUDIO_PWR_EN 可改 PB8。
+
+---
+
+# 五、韌體架構
+
+```text
+/Core
+  main.c
+  app_main.c
+
+/Drivers_Board
+  bsp_power.c        // AO3401 power domain control
+  bsp_uart_log.c     // printf / log
+  bsp_imu.c          // MPU6500 low-level SPI
+  bsp_audio.c        // I2S + DMA audio output
+
+/Middleware
+  imu_filter.c       // complementary filter / simple attitude
+  audio_synth.c      // sine wave / test tone
+  power_manager.c    // ACTIVE / IDLE / SLEEP state machine
+
+/App
+  app_head_audio.c   // posture -> audio behavior
+```
+
+---
+
+# 六、狀態機設計
+
+```text
+             +---------+
+             |  BOOT   |
+             +----+----+
+                  |
+                  v
+            +-----------+
+            | INIT_IMU  |
+            +-----+-----+
+                  |
+                  v
+            +-----------+
+            |   IDLE    |<----------------+
+            +-----+-----+                 |
+                  | motion detected       |
+                  v                       |
+            +-----------+                 |
+            |  ACTIVE   |                 |
+            | audio on  |                 |
+            +-----+-----+                 |
+                  | no motion timeout     |
+                  v                       |
+            +-----------+                 |
+            | AUDIO_OFF |-----------------+
+            +-----------+
+```
+
+---
+
+# 七、第一版你要先做的順序
+
+不要一開始就接全部，照這個順序：
+
+```text
+Step 1：STM32 + UART
+Step 2：STM32 GPIO 控制 AO3401，量 Drain 是否有電
+Step 3：接 MAX98357A，只播 440Hz sine
+Step 4：接 MPU6500，只讀 WHO_AM_I
+Step 5：MPU6500 連續讀 gyro/acc
+Step 6：姿態角控制音量
+Step 7：加入 low-power mode
+Step 8：加入 INA219 功耗記錄
+```
+
+---
+
+# 八、這專案最後可以展示什麼
+
+最後 demo 可以長這樣：
+
+```text
+開機：
+[BOOT] Smart Head-Tracking Audio Device
+
+感測器：
+[IMU] connected
+[IMU] roll=3.2 pitch=-1.5 yaw_rate=0.4
+
+音訊：
+[AUDIO] I2S DMA started
+[AUDIO] tone=440Hz gain=0.75
+
+電源管理：
+[PWR] AUDIO ON
+[PWR] SENSOR ON
+[MODE] ACTIVE
+
+低功耗：
+[MODE] IDLE
+[PWR] AUDIO OFF
+```
+
+履歷上可以寫：
+
+```text
+Built an STM32F411-based smart hearable prototype integrating MPU6500 motion sensing, I2S audio output through MAX98357A, firmware-controlled MOSFET power-domain switching, UART diagnostics, and low-power state management.
+```
+
+---
+
+# 九、我建議你下一步先做這個
+
+先做 **AO3401 控制 MAX98357A 電源 + UART log**。
+
+因為這一步能把「power management」先做出來，而且失敗風險最低。
+
+第一個最小系統：
+
+```text
+STM32F411
+  |
+  +-- GPIO -> NPN -> AO3401 -> MAX98357A VIN
+  |
+  +-- UART -> PC log
+```
+
+等這個成功，再接 I2S 音訊。

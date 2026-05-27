@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>INA219 電源監測</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell power-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">INA219</p>
+          <h1>電源監測資料</h1>
+          <p id="connectionStatus" class="status-text">未連線</p>
+        </div>
+        <div class="actions">
+          <a class="button-link secondary" href="./index.html">MPU 頁面</a>
+          <a class="button-link secondary" href="./log.html">Log Viewer</a>
+          <button id="connectButton" type="button">連接序列埠</button>
+          <button id="demoButton" type="button" class="secondary">Demo</button>
+        </div>
+      </header>
+
+      <section class="power-dashboard" aria-label="INA219 電源監測">
+        <section class="power-overview" aria-label="即時讀值">
+          <div class="power-card bus-voltage">
+            <span>Bus Voltage</span>
+            <strong id="busValue">-- V</strong>
+          </div>
+          <div class="power-card current">
+            <span>Current</span>
+            <strong id="currentValue">-- mA</strong>
+          </div>
+          <div class="power-card power">
+            <span>Power</span>
+            <strong id="powerValue">-- mW</strong>
+          </div>
+        </section>
+
+        <section class="power-panel" aria-label="統計資料">
+          <div class="panel-heading">
+            <div>
+              <h2>Sample Window</h2>
+              <p id="lastUpdatedValue">等待 PWR 資料</p>
+            </div>
+            <span id="modeBadge" class="mode-badge">--</span>
+          </div>
+
+          <div class="power-stats">
+            <div class="metric">
+              <span>Average</span>
+              <strong id="avgValue">-- mA</strong>
+            </div>
+            <div class="metric">
+              <span>Min</span>
+              <strong id="minValue">-- mA</strong>
+            </div>
+            <div class="metric">
+              <span>Max</span>
+              <strong id="maxValue">-- mA</strong>
+            </div>
+            <div class="metric">
+              <span>Samples</span>
+              <strong id="sampleValue">0</strong>
+            </div>
+          </div>
+
+          <div class="scope-grid" aria-label="Oscilloscope waveforms">
+            <div class="scope-toolbar">
+              <div>
+                <span>Oscilloscope</span>
+                <strong id="scopeScaleLabel">Waiting for samples</strong>
+              </div>
+            </div>
+            <div class="scope-panel scope-voltage">
+              <div class="scope-title">
+                <span><b class="scope-bus"></b>Bus Voltage</span>
+                <strong id="busScopeLabel">-- V</strong>
+              </div>
+              <canvas id="busScopeCanvas" width="1000" height="220"></canvas>
+            </div>
+            <div class="scope-panel scope-current">
+              <div class="scope-title">
+                <span><b class="scope-current"></b>Current</span>
+                <strong id="currentScopeLabel">-- mA</strong>
+              </div>
+              <canvas id="currentScopeCanvas" width="1000" height="220"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="power-panel" aria-label="Demo summary">
+          <div class="panel-heading">
+            <div>
+              <h2>Demo Summary</h2>
+              <p id="demoSummaryUpdated">等待 [DEMO_SUMMARY]</p>
+            </div>
+            <span id="demoSummaryBadge" class="mode-badge muted">WAITING</span>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-item primary">
+              <span>Result</span>
+              <strong data-summary-key="RESULT">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Head Tracking</span>
+              <strong data-summary-key="HEAD_TRACKING">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Head Down Mute</span>
+              <strong data-summary-key="HEAD_DOWN_MUTE">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Rail Cutoff</span>
+              <strong data-summary-key="LOW_POWER_AUDIO_RAIL_CUTOFF">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>Active 20%</span>
+              <strong data-summary-key="ACTIVE_20_CURRENT">-- mA</strong>
+            </div>
+            <div class="summary-item">
+              <span>Head Down</span>
+              <strong data-summary-key="HEAD_DOWN_CURRENT">-- mA</strong>
+            </div>
+            <div class="summary-item">
+              <span>Low Power</span>
+              <strong data-summary-key="LOW_POWER_CURRENT">-- mA</strong>
+            </div>
+            <div class="summary-item">
+              <span>IMU</span>
+              <strong data-summary-key="IMU">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>I2S Left</span>
+              <strong data-summary-key="I2S_LEFT">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>I2S Right</span>
+              <strong data-summary-key="I2S_RIGHT">--</strong>
+            </div>
+            <div class="summary-item">
+              <span>INA219</span>
+              <strong data-summary-key="INA219">--</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="power-panel" aria-label="原始資料">
+          <div class="panel-heading">
+            <div>
+              <h2>Raw USART</h2>
+              <p>顯示收到的 PWR、INA219、DEMO_SUMMARY 資料列</p>
+            </div>
+          </div>
+          <textarea id="rawLog" readonly spellcheck="false"></textarea>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="./ina219.js"></script>
+  </body>
+</html>

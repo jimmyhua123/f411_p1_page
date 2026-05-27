@@ -1,0 +1,223 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MPU 姿態模擬器</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell combined-shell">
+      <header class="topbar">
+        <div>
+          <h1>MPU 姿態模擬器</h1>
+          <p id="connectionStatus" class="status-text">未連線</p>
+        </div>
+        <div class="actions">
+          <a class="button-link secondary" href="./ina219.html">INA219 頁面</a>
+          <a class="button-link secondary" href="./log.html">Log Viewer</a>
+          <button id="connectButton" type="button">連接序列埠</button>
+          <button id="calibrateButton" type="button" class="secondary">校正零點</button>
+          <button id="demoButton" type="button" class="secondary">Demo</button>
+        </div>
+      </header>
+
+      <section class="workspace combined-workspace" aria-label="Combined telemetry dashboard">
+        <div class="visual-panel">
+          <div class="scene" aria-label="3D 姿態模型">
+            <div id="model" class="three-preview" aria-label="3D attitude model"></div>
+            <div class="axis-legend" aria-label="XYZ 軸向">
+              <span><b class="legend-x"></b>X roll</span>
+              <span><b class="legend-y"></b>Y pitch</span>
+              <span><b class="legend-z"></b>Z yaw</span>
+            </div>
+          </div>
+          <div class="horizon cockpit-view" aria-label="人工地平線">
+            <div id="horizonSky" class="horizon-sky">
+              <div class="horizon-line"></div>
+              <div class="runway"></div>
+            </div>
+            <div class="cockpit-window"></div>
+            <div class="nose-reticle">
+              <span class="reticle-wing reticle-left"></span>
+              <span class="reticle-center"></span>
+              <span class="reticle-wing reticle-right"></span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="telemetry" aria-label="即時遙測資料">
+          <div class="metric primary">
+            <span>Roll</span>
+            <strong id="rollValue">0.00 deg</strong>
+          </div>
+          <div class="metric primary">
+            <span>Pitch</span>
+            <strong id="pitchValue">0.00 deg</strong>
+          </div>
+          <div class="metric primary">
+            <span>Yaw</span>
+            <strong id="yawValue">0.00 deg</strong>
+          </div>
+
+          <div class="audio-panel" aria-label="音訊狀態">
+            <div class="metric audio-direction">
+              <span>Direction</span>
+              <strong id="directionValue">置中</strong>
+            </div>
+            <div class="volume-meter">
+              <div>
+                <span>Smooth Avg</span>
+                <strong id="volumeValue">50 %</strong>
+              </div>
+              <div class="volume-track" aria-hidden="true">
+                <span id="volumeFill"></span>
+              </div>
+            </div>
+            <div class="channel-meters">
+              <div class="volume-meter">
+                <div>
+                  <span>Smooth L</span>
+                  <strong id="leftVolumeValue">100 %</strong>
+                </div>
+                <div class="volume-track" aria-hidden="true">
+                  <span id="leftVolumeFill"></span>
+                </div>
+              </div>
+              <div class="volume-meter">
+                <div>
+                  <span>Smooth R</span>
+                  <strong id="rightVolumeValue">100 %</strong>
+                </div>
+                <div class="volume-track" aria-hidden="true">
+                  <span id="rightVolumeFill"></span>
+                </div>
+              </div>
+            </div>
+            <div class="audio-grid">
+              <div class="metric">
+                <span>Target L</span><strong id="targetLeftValue">100 %</strong>
+              </div>
+              <div class="metric">
+                <span>Target R</span><strong id="targetRightValue">100 %</strong>
+              </div>
+              <div class="metric">
+                <span>Mode</span><strong id="modeValue">Legacy</strong>
+              </div>
+              <div class="metric">
+                <span>Gain</span><strong id="gainDbValue">-12.0 dB</strong>
+              </div>
+              <div class="metric">
+                <span>Audio</span><strong id="audioStateValue">ON</strong>
+              </div>
+
+
+
+
+
+            </div>
+          </div>
+
+          <div class="axis-controls" aria-label="軸向反轉">
+            <label class="axis-toggle">
+              <input id="invertX" type="checkbox" />
+              <span>X 反向</span>
+            </label>
+            <label class="axis-toggle">
+              <input id="invertY" type="checkbox" />
+              <span>Y 反向</span>
+            </label>
+            <label class="axis-toggle">
+              <input id="invertZ" type="checkbox" />
+              <span>Z 反向</span>
+            </label>
+          </div>
+
+          <div class="status-grid">
+            <div class="metric">
+              <span>Tone</span><strong id="toneValue">標準</strong>
+            </div>
+            <div class="metric">
+              <span>Fault</span><strong id="faultValue">00000000</strong>
+            </div>
+            <div class="metric">
+              <span>Bus</span><strong id="busValue">0.000 V</strong>
+            </div>
+            <div class="metric">
+              <span>Current</span><strong id="currentValue">0.00 mA</strong>
+            </div>
+            <div class="metric">
+              <span>Power</span><strong id="powerValue">0.0 mW</strong>
+            </div>
+          </div>
+          <div class="metric-grid">
+            <div class="metric">
+              <span>ax</span><strong id="axValue">0</strong>
+            </div>
+            <div class="metric">
+              <span>ay</span><strong id="ayValue">0</strong>
+            </div>
+            <div class="metric">
+              <span>az</span><strong id="azValue">0</strong>
+            </div>
+            <div class="metric">
+              <span>gx</span><strong id="gxValue">0</strong>
+            </div>
+            <div class="metric">
+              <span>gy</span><strong id="gyValue">0</strong>
+            </div>
+            <div class="metric">
+              <span>gz</span><strong id="gzValue">0</strong>
+            </div>
+          </div>
+          <label class="log-label" for="rawLog">Raw USART</label>
+          <textarea id="rawLog" readonly spellcheck="false"></textarea>
+        </aside>
+      </section>
+
+      <section class="combined-power" aria-label="INA219 power telemetry">
+        <section class="power-overview">
+          <div class="power-card bus-voltage">
+            <span>Bus Voltage</span>
+            <strong id="powerBusValue">0.000 V</strong>
+          </div>
+          <div class="power-card current">
+            <span>Current</span>
+            <strong id="powerCurrentValue">0.00 mA</strong>
+          </div>
+          <div class="power-card power">
+            <span>Power</span>
+            <strong id="powerPowerValue">0.0 mW</strong>
+          </div>
+        </section>
+
+        <section class="power-panel">
+          <div class="scope-grid combined-scope-grid" aria-label="Power scope">
+            <div class="scope-toolbar">
+              <div>
+                <span>INA219 Scope</span>
+                <strong id="scopeScaleLabel">Waiting for TEL samples</strong>
+              </div>
+            </div>
+            <div class="scope-panel">
+              <div class="scope-title">
+                <span><b class="scope-bus"></b>Bus Voltage</span>
+                <strong id="busScopeLabel">-- V</strong>
+              </div>
+              <canvas id="busScopeCanvas" width="1000" height="220"></canvas>
+            </div>
+            <div class="scope-panel">
+              <div class="scope-title">
+                <span><b class="scope-current"></b>Current</span>
+                <strong id="currentScopeLabel">-- mA</strong>
+              </div>
+              <canvas id="currentScopeCanvas" width="1000" height="220"></canvas>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
