@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>MPU 姿態監測簡報</title>
+<style>
+@page { size: 1920px 1080px; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #fff; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif; color: #1f2a2e; }
+.page {
+  width: 1920px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  background: #f5f1e8;
+  page-break-after: always;
+  break-after: page;
+}
+.page:last-child { page-break-after: auto; break-after: auto; }
+.footer {
+  position: absolute;
+  left: 120px;
+  right: 120px;
+  bottom: 62px;
+  display: flex;
+  justify-content: space-between;
+  color: #637174;
+  font-size: 24px;
+}
+.eyebrow { color: #0f8b8d; font-size: 28px; font-weight: 780; margin-bottom: 46px; }
+.hero { font-size: 148px; line-height: .98; font-weight: 900; margin: 0; letter-spacing: 0; }
+.lead { font-size: 42px; line-height: 1.42; color: #637174; max-width: 940px; margin: 54px 0 0; }
+h2 { font-size: 86px; line-height: 1.08; margin: 0; font-weight: 880; }
+.sub { font-size: 36px; line-height: 1.45; color: #637174; width: 1040px; margin: 32px 0 78px; }
+.flow { display: flex; align-items: center; gap: 34px; }
+.node {
+  width: 330px;
+  height: 230px;
+  border-radius: 10px;
+  background: #fffaf0;
+  border: 3px solid #d8cfc0;
+  padding: 34px;
+}
+.node .mark { width: 54px; height: 54px; border-radius: 12px; margin-bottom: 26px; }
+.node .title { font-size: 42px; font-weight: 820; margin-bottom: 18px; }
+.node .detail { font-size: 27px; line-height: 1.42; color: #637174; }
+.arrow { font-size: 64px; color: #d99721; font-weight: 800; }
+.signal {
+  width: 360px;
+  min-height: 250px;
+  border: 3px solid #d8cfc0;
+  border-radius: 10px;
+  background: #fffaf0;
+  padding: 32px;
+}
+.signal .bar { width: 44px; height: 12px; border-radius: 999px; margin-bottom: 34px; }
+.signal .label { font-size: 28px; color: #637174; margin-bottom: 18px; }
+.signal .value { font-size: 58px; font-weight: 850; line-height: 1.05; margin-bottom: 22px; }
+.signal .caption { font-size: 25px; line-height: 1.45; color: #637174; }
+.chart {
+  position: absolute;
+  left: 120px;
+  right: 120px;
+  bottom: 142px;
+  height: 210px;
+  border-radius: 10px;
+  background: #223236;
+  border: 3px solid #33484d;
+  display: flex;
+  align-items: end;
+  gap: 18px;
+  padding: 30px 36px;
+}
+.chart .col { width: 74px; border-radius: 6px; }
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+  <section class="page" style="padding:132px 120px">
+    <svg viewBox="0 0 620 620" width="620" height="620" style="position:absolute;right:90px;top:70px">
+      <circle cx="310" cy="310" r="206" fill="none" stroke="#d8cfc0" stroke-width="34"/>
+      <circle cx="310" cy="310" r="112" fill="none" stroke="#bfcfc7" stroke-width="26"/>
+      <path d="M310 104V20M310 600v-84M104 310H20M600 310h-84" stroke="#1f2a2e" stroke-width="18" stroke-linecap="round"/>
+      <path d="M456 164l62-62M102 518l62-62M164 164l-62-62M518 518l-62-62" stroke="#d99721" stroke-width="18" stroke-linecap="round"/>
+      <circle cx="310" cy="310" r="46" fill="#0f8b8d"/>
+      <circle cx="310" cy="310" r="18" fill="#fffaf0"/>
+    </svg>
+    <div style="position:relative;z-index:1;max-width:1120px">
+      <div class="eyebrow">OPEN-SLIDE WITH CODEX</div>
+      <h1 class="hero">MPU 姿態監測簡報</h1>
+      <p class="lead">用 React component 寫投影片，Codex 可以直接新增頁面、調整版面，並在瀏覽器即時預覽。</p>
+    </div>
+    <div class="footer"><span>MPU + INA219 telemetry</span><span>01 / 03</span></div>
+  </section>
+
+  <section class="page" style="padding:118px 120px">
+    <h2>從感測器到瀏覽器</h2>
+    <p class="sub">範例把 MPU 姿態與 INA219 電力資料整理成一條清楚的展示流程。</p>
+    <div class="flow">
+      <div class="node"><div class="mark" style="background:#0f8b8d"></div><div class="title">Serial</div><div class="detail">板端資料流進 Node server</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="mark" style="background:#d99721"></div><div class="title">Parser</div><div class="detail">轉成姿態角、電壓與電流</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="mark" style="background:#417b5a"></div><div class="title">Viewer</div><div class="detail">Web UI 即時更新儀表板</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="mark" style="background:#d95f43"></div><div class="title">Slide</div><div class="detail">將重點包成可分享簡報</div></div>
+    </div>
+    <div class="footer"><span>MPU + INA219 telemetry</span><span>02 / 03</span></div>
+  </section>
+
+  <section class="page" style="padding:112px 120px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:80px">
+      <div style="width:690px">
+        <h2 style="font-size:82px">投影片也是介面</h2>
+        <p style="font-size:35px;line-height:1.48;color:#637174;margin:34px 0 0">open-slide 適合把工程狀態、實驗結果、demo 流程做成可維護的簡報。</p>
+      </div>
+      <div style="display:flex;gap:28px">
+        <div class="signal"><div class="bar" style="background:#0f8b8d"></div><div class="label">Pitch</div><div class="value">+12.4°</div><div class="caption">姿態角保持穩定</div></div>
+        <div class="signal"><div class="bar" style="background:#d99721"></div><div class="label">Current</div><div class="value">318mA</div><div class="caption">負載變化可追蹤</div></div>
+        <div class="signal"><div class="bar" style="background:#417b5a"></div><div class="label">Voltage</div><div class="value">5.08V</div><div class="caption">供電狀態正常</div></div>
+      </div>
+    </div>
+    <div class="chart">
+      <div class="col" style="height:72px;background:#4fb0a8"></div>
+      <div class="col" style="height:118px;background:#d99721"></div>
+      <div class="col" style="height:96px;background:#4fb0a8"></div>
+      <div class="col" style="height:150px;background:#d95f43"></div>
+      <div class="col" style="height:132px;background:#4fb0a8"></div>
+      <div class="col" style="height:170px;background:#d99721"></div>
+      <div class="col" style="height:104px;background:#4fb0a8"></div>
+      <div class="col" style="height:142px;background:#d95f43"></div>
+      <div style="margin-left:auto;color:#dce7e3;font-size:28px;align-self:center">telemetry sample window</div>
+    </div>
+    <div class="footer"><span>MPU + INA219 telemetry</span><span>03 / 03</span></div>
+  </section>
+</body>
+</html>
